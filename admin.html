@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JUST CHATTING - Sistem Yönetim Merkezi</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1e293b; color: #f8fafc; padding: 20px; }
+        
+        .admin-lock { max-width: 400px; margin: 100px auto; background: #0f172a; padding: 30px; border-radius: 8px; border: 1px solid #334155; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .admin-lock h2 { margin-bottom: 20px; color: #3b82f6; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #475569; background: #1e293b; color: white; text-align: center; font-size: 16px; outline: none; }
+        
+        #admin-panel { display: none; max-width: 1300px; margin: 0 auto; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 2px solid #334155; margin-bottom: 30px; }
+        .admin-header h1 { color: #f43f5e; font-style: italic; }
+        .badge { background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .badge-founder { background: #e11d48; }
+        .badge-moderator { background: #d97706; }
+
+        .grid { display: grid; grid-template-columns: 1fr; gap: 25px; }
+        @media (min-width: 992px) { .grid { grid-template-columns: 1.2fr 0.8fr; } }
+        
+        .card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .card-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #3b82f6; display: flex; justify-content: space-between; align-items: center; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; color: #cbd5e1; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #1e293b; font-weight: bold; color: #3b82f6; }
+        tr:hover { background: rgba(51, 65, 85, 0.2); }
+
+        /* FİX 6: Butonlar arası boşluk kalkanı enjekte edildi! */
+        .btn-action { padding: 10px 18px; font-size: 12px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 15px; transition: opacity 0.2s; }
+        .btn-action:hover { opacity: 0.8; }
+        .btn-ban-hard { background: #b91c1c; }
+        .btn-mute-1h { background: #f97316; }
+        .btn-mute-24h { background: #eab308; color: black; }
+        .btn-archive { background: #64748b; }
+        
+        .badge-status { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .badge-active { background: #065f46; color: #34d399; }
+        .badge-disabled { background: #475569; color: #cbd5e1; }
+        .badge-banned { background: #7f1d1d; color: #fca5a5; }
+        
+        .msg-box-preview { background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 4px; max-width: 220px; word-break: break-all; font-style: italic; color: #94a3b8; }
+        .form-inline { display: flex; flex-direction: column; gap: 10px; }
+        
+        .founder-only-zone { display: none; }
+    </style>
+  <script type="module" crossorigin src="/chat/assets/admin-CXvI-ips.js"></script>
+  <link rel="modulepreload" crossorigin href="/chat/assets/firebase-DYTUbME7.js">
+</head>
+<body>
+
+    <div id="lock-screen" class="admin-lock">
+        <h2>🔒 Yetkili Girişi</h2>
+        <input type="text" id="admin-nick" placeholder="Yönetici Kullanıcı Adı">
+        <input type="password" id="admin-pass" placeholder="Yönetici Giriş Şifresi">
+        <button id="auth-btn" style="background: #3b82f6; color: white; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; border: none;">Paneli Aç</button>
+    </div>
+
+    <div id="admin-panel">
+        <div class="admin-header">
+            <div>
+                <h1>🌟 JUST CHATTING Yönetim Merkezi</h1>
+                <p id="admin-welcome-text">Sistem komutları aktif.</p>
+            </div>
+            <span id="role-badge" class="badge">Yükleniyor...</span>
+        </div>
+
+        <div id="founder-wipe-zone" style="margin-bottom: 30px; background: #451a03; border: 1px solid #78350f; padding: 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="color: #f59e0b;">🧹 Sistem Veri Kontrolleri ve Sıfırlama</h3>
+                <p style="font-size: 13px; color: #fcd34d; margin-top: 5px;">Odalardaki yoğunluğu temizlemek veya sistemi tamamen durdurup/başlatmak için burayı kullanın.</p>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <button id="system-toggle-btn" class="btn-action" style="background: #ef4444; margin-right: 15px;">🛑 Sistemi Durdur</button>
+                <button id="manual-wipe-btn" class="btn-action" style="background: #d97706; margin-right: 15px;">Mesajları Temizle</button>
+                <button id="hard-reset-btn" class="btn-action btn-action founder-only-zone" style="background: #dc2626; margin: 0;">FABRİKA AYARLARINA DÖN</button>
+            </div>
+        </div>
+
+        <div id="founder-seed-zone" class="founder-only-zone" style="margin-bottom: 30px; background: #064e3b; border: 1px solid #065f46; padding: 15px; border-radius: 6px;">
+            <h3 style="color: #34d399; margin-bottom: 10px;">🌳 Sistem Kök Davetiyesi Oluştur</h3>
+            <button id="generate-root-btn" class="btn-action" style="background: #10b981; padding: 10px 20px; font-size: 13px;">+ Kök Kod Üret (REF-ROOT)</button>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-title">⚠️ Canlı Şikayet & Rapor Ekranı</div>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Şikayet Edilen</th>
+                                <th>Şikayet Eden</th>
+                                <th>Neden</th>
+                                <th>Mesaj İçeriği</th>
+                                <th>Gelişmiş Cezalandırma İşlemleri</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-table-body">
+                            <tr><td colspan='5' style='text-align:center; padding: 20px; color:#94a3b8;'>Şikayet akışı yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <div class="card-title">🛠️ Manuel Ceza Modülü</div>
+                    <div class="form-inline">
+                        <input type="text" id="target-code" placeholder="Ceza Verilecek Ref Kodu (Örn: REF-XXXX)">
+                        <button class="btn-action btn-ban-hard" id="action-ban-branch" style="padding: 10px; margin-bottom: 5px; width: 100%;">Kolu Tamamen Engelle (BAN)</button>
+                        <button class="btn-action btn-mute-1h" id="action-mute-user" style="padding: 10px; width: 100%;">Kullanıcıya Manuel Mute At</button>
+                    </div>
+                </div>
+
+                <div id="founder-chain-card" class="card founder-only-zone">
+                    <div class="card-title">🌳 Referans Zinciri İzleme</div>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Mevcut Kod</th>
+                                    <th>Anakod / Üstkod</th>
+                                    <th>Durum</th>
+                                    <th>Aksiyon</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chains-table-body">
+                                <tr><td colspan='4' style='text-align:center; padding: 20px; color:#94a3b8;'>Zincir verileri yükleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
