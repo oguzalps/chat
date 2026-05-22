@@ -47,6 +47,16 @@
         .form-inline { display: flex; flex-direction: column; gap: 10px; }
         
         .founder-only-zone { display: none; }
+
+        @keyframes scannerMove {
+    0% { top: -5%; }
+    100% { top: 105%; }
+}
+
+.siber-scanner-line {
+    animation: scannerMove 1.5s ease-in-out infinite alternate;
+}
+
     </style>
   <script type="module" crossorigin src="/chat/assets/admin-tbvZEVed.js"></script>
   <link rel="modulepreload" crossorigin href="/chat/assets/firebase-CKIskER9.js">
